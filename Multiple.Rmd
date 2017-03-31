@@ -1,0 +1,819 @@
+---
+Title: Mutivariate Regression Analysis
+author: "Gurtej"
+date: "3/11/2017"
+output: html_document
+---
+
+
+\centering
+\vspace*{5cm}
+
+\huge
+A Project Report on Mutivariate Regression Analysis
+\LARGE
+Gurtej Khanooja
+
+\large
+March 2017
+
+\normalsize
+
+\pagenumbering{roman}
+\raggedright
+\clearpage
+
+\tableofcontents
+
+\pagebreak
+\pagenumbering{arabic}
+\setcounter{page}{4}
+
+
+
+
+
+
+# **Chapter 1**
+
+## 1.1 Objective
+
+* To predict the energy consumption (Heating Load) by creating the best Multivariate Linear Regression Model.
+
+* Understanding the interaction between various regressor variable.
+
+## 1.2 Understanding the Dataset
+
+The dataset is borrowed from UC Irvine Machine Learning Repository. It's an energy effiency dataset with 768 observations.There are total of 8 attributes and 1 respose variable in the dataset. The different attributes collectively are responsible for the energy consumption (the response variable). Each factor contributes towards the energy consumption in its own way. 
+
+Following are the attributes and the dependent variable in the data set:
+
+List of independent variables:
+
+* X1	Relative Compactness 
+* X2	Surface Area 
+* X3	Wall Area 
+* X4	Roof Area 
+* X5	Overall Height 
+* X6	Orientation 
+* X7	Glazing Area 
+* X8	Glazing Area Distribution 
+
+Dependent Variable:
+
+* y1 Heating Load 
+
+Our goal is to understand and study regression model derived out of this dataset. We will be applying the stastical methods learned during class to get the best regression model out of the dataset. The objective is to create the model with minimum number of variables without compromising with the accuracy of prediction. Moreover, we will also study how different regressor variables are dependent on each other by doing covariance analysis.
+
+
+## 1.3 Loading the dataset
+
+```{r}
+data <- read.csv("/Users/Gurtej/Documents/NEU/Course Material/Semester 2/SME/SME - Project 1/ENB2012_data.csv", header=TRUE)
+head (data)
+attach (data)
+dplyr::tbl_df(data)
+```
+
+$$ \pagebreak $$
+
+# **Chapter 2**
+
+## 2.1 Fitting Linear Regression Model with all variables, MODEL 1
+
+```{r}
+model <- lm(Y1 ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8)
+summary(model)
+```
+
+From the above linear fit for multivariate problem, the best fit equation is as follows:
+
+*Y1 = 84.014521 -64.773991X1 - 0.087290X2 +0.060813X3 + 4.169939X5 - 0.023328X6 + 19.932680X7 + 0.203772X8*
+
+Intresting thing to see in the above model is that the variable X5 is not defined because if singularity which basically means there is another variable in whose linear combination is able to fullfil the contribution of X5. So, even if we try to form the model without including X5 we will get exactly the same number of coffecients.
+
+The R-squared for the above model is  0.9162 which means 91.62% of variation in y1 is explained by the regressor variables.
+
+## 2.2 Fitting Multiple Regression model of order 2 for the same data, MODEL 2 (polynomial regression of order 2)
+
+```{r}
+model_quad <- lm(Y1 ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + I(X1^2) + I(X2^2) + I(X3^2) + I(X4^2) + I(X5^2) + I(X6^2) + I(X7^2) + I(X8^2))
+
+summary(model_quad)
+```
+
+From the above quadratic fit for multivariate problem, the best fit equation is as follows:
+
+*Y1 = -1.643e+03 - 1.816e+03X1 +  8.891e+00X2 - 4.146e+00X3 - 4.365e+01X5 + 6.827e-02X6 + 3.213e+01X7 + 1.140e+00X8 + 1.585e+03X1^2 -3.074e-03X2^2 + 3.466e-04X3^2 - 2.846e-02X4^2 -1.309e-02X6^2 -2.792e+01X7^2 -1.824e-01X8^2*
+
+We see from the summary of above two models that the R square and adjusted R square increases as we increase the degree of fit basically giving a signal of better fit of the model. This increase in the degree of fitted model could be useful only till certain extent, if exceeded a certain limit the cons due to overfitting could dominate giving undesired predictions.
+
+## 2.3 Testing for lack of fit 
+
+How can we tell if a model fits the data? If the model is correct then predicted variance should be an unbiased estimate of variance . If we have a model which is not complex enough to fit the data or simply takes the wrong form, then predicted variance will overestimate variance.
+
+```{r}
+ts <- (summary(model)$sigma^2)*760 #test statistic for 760 degree of freedom
+1-pchisq(ts,760)
+model_fit<- lm(Y1 ~ factor(X1)+ factor(X2)+factor(X3)+factor(X4)+factor(X5)+factor(X6)+factor(X7))
+anova(model, model_fit)
+```
+
+The low p-value indicates that we must conclude that there is a lack of fit. The reason is that the pure error standard devation is substantially less than the regression standard error of 2.934. We might investigate models other than a straight line to get more indepth idea. 
+
+For the factor model above, the R2 is 98.96%. So even this saturated model does not attain a 100% value for R2. For these data, it’s a small difference but in other cases, the difference can be substantial. In these cases, one should realize that the maximum R2 that may be attained might be substantially less than 100% and so perceptions about what a good value for R2 should be downgraded appropriately.
+
+These methods are good for detecting lack of fit, but if the null hypothesis is accepted, we cannot conclude that we have the true model. After all, it may be that we just did not have enough data to detect the inadequacies of the model. All we can say is that the model is not contradicted by the data.
+When there are no replicates, it may be possible to group the responses for similar x but this is not straightforward. 
+$$ \pagebreak $$
+
+# **Chapter 3**
+
+## 3.1 Model Dignostics 
+
+After fitting a regression model it is important to determine whether all the necessary model assumptions are valid before performing inference. If there are any violations, subsequent inferential procedures may be invalid resulting in faulty conclusions. Therefore, it is crucial to perform appropriate model diagnostics.
+
+Model diagnostic procedures involve both graphical methods and formal statistical tests. These procedures allow us to explore whether the assumptions of the regression model are valid and decide whether we can trust subsequent inference results.
+
+## 3.2 Studying the Variables
+
+```{r}
+pairs(~X1+X2+X3+X4+X5+X6+X7+X8)
+```
+
+From the above scatter plot we can see how is the relation between various different variables in the dataset. It helps us get a graphical view of how variables are related to each other taken two at a time.
+
+## 3.3 Leverage Analysis
+
+The leverage of an observation measures its ability to move the regression model all by itself by simply moving in the y-direction. The leverage measures the amount by which the predicted value would change if the observation was shifted one unit in the y- direction.
+
+The leverage always takes values between 0 and 1. A point with zero leverage has no effect on the regression model. If a point has leverage equal to 1 the line must follow the point perfectly.
+
+```{r}
+lev = hat(model.matrix(model))
+plot(lev)
+```
+
+There are some points high up in the graph which are the high leverage points. Mostly all the points in the above graph occupy very small space (approx ~ 0.017), so there isn't a high leverage point in this dataset. Still let's try and observe the points with leverage value more then 0.022.
+
+```{r}
+data[lev>0.022,]
+```
+
+There is typically nothing unusual about these observations above but we can conclude that even if these points hold a miute leverage there are just two points points like this in the whole dataset.
+
+## 3.4 Residual Analysis 
+
+We can use residuals to study whether:
+* The regression function is nonlinear.
+* The error terms have nonconstant variance. The error terms are not independent.
+* There are outliers.
+* The error terms are not normally distributed.
+
+We can check for violations of these assumptions by making plots of the residuals, including:
+* Plots of the residuals against the explanatory variable or fitted values. 
+* Histograms of the residuals.
+* Normal probability plots of the residuals.
+     
+```{r}
+par(mar=c(1,1,1,1))
+par(mfrow=c(4,2))
+plot(X1, model$residuals,xlab = "X1", ylab = "Residual" )
+plot(X2, model$residuals,xlab = "X2", ylab = "Residual")
+plot(X3, model$residuals,xlab = "X3", ylab = "Residual")
+plot(X4, model$residuals,xlab = "X4", ylab = "Residual")
+plot(X5, model$residuals,xlab = "X5", ylab = "Residual")
+plot(X6, model$residuals,xlab = "X6", ylab = "Residual")
+plot(X7, model$residuals,xlab = "X7", ylab = "Residual")
+hist(model$res)
+```
+
+From above we see that the reiduals are distributed from range -10 to 5 for all different regressor variables. From the histogram plot for the residual we see that most of the residual are concetrated near mean with almost a normal looking curve, with the curve having thin gaps at extremities.
+$$ \pagebreak $$
+
+# **Chapter 4**
+
+NOTE: All the calculations are for linear multivariate model i.e. MODEL 1
+
+## 4.1 Calculating the 95% confidence interval on variables
+
+```{r}
+confint(model)
+```
+
+The above table generated shows 95% confidence interval for the all the variables in best fit line. The coloum with 2.5% shows the lower boundary for the interval and the coloumn with 97.5% shows the upper boundary for the interval.
+
+## 4.2 Calculating 95% confidence interval on the model
+
+Confidence interval will be calculated for X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5
+
+The true value of y1 for above case is 16.64. We will observe that to what accuracy our full model can predict the value of y1 for the above case.
+
+
+## 4.3 Calculating 95% predection interval on the model
+
+Prediction interval will be calculated for X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5
+
+The true value of y1 for above case is 16.64. We will observe that to what accuracy our full model can predict the value of y1 for the above case.
+
+```{r}
+datapredict <- data.frame(X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5)
+predict(model, datapredict, interval='confidence')
+```
+
+The above output gives 95 percent confidence interval for the above given values of regressor variable. The fitted value is 17.80396. The lower bound and upper bound for 95% confidence interval is given respectively by 16.81991 and 18.788.
+
+```{r}
+datapredict <- data.frame(X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5)
+predict(model, datapredict, interval='prediction')
+```
+
+The above output gives 95 percent prediction interval for the above given values of regressor variable. The fitted value is 17.80396 while the true value was 16.64. The lower bound and upper bound for 95% prediction interval is given respectively by 11.96018 and 23.64774.
+
+The deviation from true value is 1.16 (17.80-16.64) giving 93.48 percent accuarcy in prediction for above case.
+
+NOTE: One intresting thing to note here is the both in the case of confidence and prediction intrval we get the same fitted value but the difference between upper and lower bound in case of prediction inteval in larger compared to confidence interval. This is because the prediction interval takes into account the uncertainity of knowing the population mean as well as the data scatter.
+
+## 4.4 Calculating the variance covariance matrix for the given model
+
+```{r}
+vcov(model)
+```
+
+The above output is the variance covariance matrix. The off digonal elements show covariances between respective elements in the matrix. For example the largest positive number in matrix 2.223678e+00 corrosponding to element X1 and X5 reflecting high positive covariance amoungst two elements. The highest negative number is -4.858953e+00 which corrosponds to intercept and X5 sugesting large inverse covariance relation.
+
+## 4.5 Diagnosing multi-colinearity
+
+```{r}
+library(car)
+vif(lm( Y1 ~ X1 + X2 + X3 + X5 + X6 + X7 + X8))
+```
+
+We take the  help of variance inflation factor to derive the multi-colinearity in the model. As you see above there is no VIF coffecient corrosponding to X4, its because it's an aliased element.
+
+
+According to most authors VIF >= 5 is a sign of caution but VIF >= 10 is surely a sign of multi-colinearity. From the above results we can see that X1, X2 and X5 have very high value of VIF suggesting that a very high level of multi-colinearity is observed between those elements and other elements in the model.
+
+## 4.6 Finding unbaised estimator of variance
+
+Following is the formula for finding unbaised estimator of variance: 
+
+$$s^2 = SSE/(n-k-1)$$
+
+```{r}
+unbaised_estimator <- sum(residuals(model)^2)/(768-7-1)
+unbaised_estimator
+```
+
+The output for the above R script is 8.610219 which gives us the value of s^2 which is the unbaised estimator for the variance for above model.
+
+$$ \pagebreak $$
+
+# **Chapter 5**
+
+## 5.1 Using t test and p values for variable screening
+
+From the summary of fitted model, following are the t-values and corrosponding p-values for  the variable:
+
+```{r}
+summary(model)
+```
+
+
+We will use the above values to test the significance of individual variables using their individual t-values and p values and try to modify the model by removing the variable if they are found insignificant.
+
+Let us assume a common assumption to do the hypothesis testing for all the variables in the model:
+
+$$ Ho: 	\beta_j = 0 $$
+$$ H1:   \beta_j \not= 0 $$
+
+
+We will assume that the significance level $$\alpha = 0.05$$
+
+We see from above table that only variable corrosponding to which p-value is greater than 0.05 is X6. We will now form a new model by removing X6 as well as X4 (as it is not effecting the model anyways) and see how much R-squared and adjusted R-squared is affected.
+
+### 5.1.1 Forming multiple regression model removing X4 and X6 and doing the analysis, MODEL 3
+
+```{r}
+model3 <- lm(Y1~ X1+ X2+ X3+ X5+ X7+ X8)
+summary(model3)
+```
+
+From the summary of above model, we see that the R-squared value is 0.9162 and the adjusted R-squared value is 0.9155. The R-squared and adjusted R-squared values for the orignal model (MODEL1), were 0.9162 and 0.9154. Therefore, we can conclude that the model will less number of variable is infact better than the orignal model with more number of variables.
+
+Apart from this the p-values of the variables in the new model are still less than 0.05, signifying that the remaning variables form essential part in model according to t-test.
+
+## 5.2 f-test for base model (MODEL 1)
+
+$$ Ho: 	\beta_1 =\beta_2 =\beta_3 ........ \beta_8 = 0 $$
+$$ H1:   \beta_1 \not= \beta_2 \not= \beta_3 \not= ......... \beta_8 \not= 0 $$
+
+From the summary for the MODEL 1, F-statistic is 1187 with very low p-value. Through this we can conclude that the model can make pretty good predictions. Thus we reject Ho and accept the alternative hypothesis.
+
+## 5.3 Performing partial f-test on the model
+
+Partial f-test are performed to see if the some of the factors would still impact or even if they imact, by what extent they will impact the model even if the other variables in the model are taken into consideration.
+
+Since there are 8 regressor variables in the model there are 256 different models that could be formed by keeping different variables equals to 0. Out of those 256 cases we will select 12 cases and see how are the predictive capiblities impacted compared to the initial base model (MODEL 1)
+
+### 5.3.1 Case: 1 (When X1, X8 = 0)
+
+```{r}
+model1_reduced <- lm(Y1 ~ X2+ X3+ X4 +X5+ X6+ X7)
+anova(model1_reduced, model)
+```
+
+$$ Ho:	\beta_1 =\beta_8 = 0 $$
+$$ H1:  \beta_1 and \beta_8 \not= 0 $$
+
+Here we are trying to ask a question weather X1 and X8 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.2 Case: 2 (When X2, X6 = 0)
+
+```{r}
+model2_reduced <- lm(Y1 ~ X1+ X3+ X4 +X5+ X7+ X8)
+anova(model2_reduced, model)
+```
+
+$$ Ho:	\beta_2 = \beta_6 = 0 $$
+$$ H1:  \beta_2 and \beta_6 \not= 0 $$
+
+Here we are trying to ask a question weather X2 and X6 are still significant given all other variables in the regression model. Seeing the p-value which is equal to 0.8055, we come to conclusion that the variables are are insignificant and we fail to reject Ho.The predicted value will not differ much as compared to full model even when X2 and X6 would be absent in the model.
+
+### 5.3.3 Case: 3 (When X3, X5 = 0)
+
+```{r}
+model3_reduced <- lm(Y1 ~ X1+ X2+ X3+ X6+ X7+ X8)
+anova(model3_reduced, model)
+```
+
+$$ Ho:	\beta_3 = \beta_5 = 0 $$
+$$ H1:  \beta_3 and \beta_5 \not= 0 $$
+
+Here we are trying to ask a question weather X3 and X5 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.4 Case: 4 (When X4, X7 = 0)
+
+```{r}
+model4_reduced <- lm(Y1 ~ X1+ X2+ X3 +X5+ X6 + X8)
+anova(model4_reduced, model)
+```
+
+$$ Ho: 	\beta_4 = \beta_7 = 0 $$
+$$ H1:   \beta_4 and \beta_7 \not= 0 $$
+
+Here we are trying to ask a question weather X4 and X7 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.5 Case: 5 (When X3, X5, X7 = 0)
+
+```{r}
+model5_reduced <- lm(Y1 ~ X1+ X2+ X4+ X6+ X8)
+anova(model5_reduced, model)
+```
+
+$$ Ho: 	\beta_3 =\beta_5 =\beta_7 = 0 $$
+$$ H1:  \beta_3, \beta_5 and \beta_7 \not= 0 $$
+
+Here we are trying to ask a question weather X3, X5 and X7 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.6 Case: 6 (When X6, X7, X8 = 0)
+
+```{r}
+model6_reduced <- lm(Y1 ~ X1+ X2+ X3 +X4+ X5)
+anova(model6_reduced, model)
+```
+$$ Ho: 	\beta_6 =\beta_7 =\beta_8 = 0 $$
+$$ H1:   \beta_6,\beta_7 and \beta_8 \not= 0 $$
+
+Here we are trying to ask a question weather X6, X7 and X8 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.7 Case: 7 (When X2, X7 = 0)
+
+```{r}
+model7_reduced <- lm(Y1 ~ X1+ X3 +X4+ X5+ X6+ X8)
+anova(model7_reduced, model)
+```
+$$ Ho: 	\beta_2 = \beta_7 = 0 $$
+$$ H1:   \beta_2 and \beta_8 \not= 0 $$
+
+Here we are trying to ask a question weather X2 and X7 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.8 Case: 8 (When X4, X8 = 0)
+
+```{r}
+model8_reduced <- lm(Y1 ~ X1+ X2+ X3+ X5+ X6+ X7)
+anova(model8_reduced, model)
+```
+$$ Ho: 	\beta_4 = \beta_8 = 0 $$
+$$ H1:   \beta_4 and \beta_8 \not= 0 $$
+
+Here we are trying to ask a question weather X4 and X8 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.9 Case: 9 (When X1, X2 = 0)
+
+```{r}
+model9_reduced <- lm(Y1 ~ X3 +X4+ X5+ X6+ X7+ X8)
+anova(model9_reduced, model)
+```
+$$ Ho: 	\beta_1 = \beta_2 = 0 $$
+$$ H1:   \beta_1 and \beta_2 \not = 0 $$
+
+Here we are trying to ask a question weather X1 and X2 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.10 Case: 10 (When X3, X4 = 0)
+
+```{r}
+model10_reduced <- lm(Y1 ~ X1+ X2+ X5+ X6+ X7+ X8)
+anova(model10_reduced, model)
+```
+$$ Ho: 	\beta_3 = \beta_4 = 0 $$
+$$ H1:  \beta_3 and \beta_4 \not = 0 $$
+
+Here we are trying to ask a question weather X3 and X4 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.11 Case: 11 (When X5, X6 = 0)
+
+```{r}
+model11_reduced <- lm(Y1 ~ X1+ X2+ X3+ X4+ X7+ X8)
+anova(model11_reduced, model)
+```
+$$ Ho:	\beta_5 = \beta_6 = 0 $$
+$$ H1:  \beta_5 and \beta_6 \not= 0 $$
+
+Here we are trying to ask a question weather X5 and X6 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.12 Case: 12 (When X2, X5, X6, X7 = 0)
+
+```{r}
+model12_reduced <- lm(Y1 ~ X1+ X3+ X4+ X8)
+anova(model12_reduced, model)
+```
+$$ Ho: 	\beta_2 = \beta_5 = \beta_6 = \beta_8 = 0 $$
+$$ H1:  \beta_2, \beta_5, \beta_6 and \beta_7 \not= 0 $$
+
+Here we are trying to ask a question weather X2, X5, X6 and X8 are still significant given all other variables in the regression model. Seeing the p-value which is very less, we come to conclusion that the variables are still significant and we reject Ho.The predicted value will differ in their absence.
+
+### 5.3.13 Analyzing Case: 2 
+
+From all of the cases mentioned, the only case where we fail to reject Ho was case 2. According to it even if we remove X2 and X6 from the model the results will not significantly differ from the base model. To prove this we will take a values corrosponding to X1, X2, X3 ....... X8 from the dataset and see the how much is the variation of the values in the case 2 model, base model and orignal model.
+
+We pick random values where X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5
+
+```{r}
+datapredict <- data.frame(X1=0.64, X2=808.5, X3=367.5, X4= 220.5, X5= 3.5, X6=5, X7= 0.40, X8= 5)
+datapredict_Case2 <- data.frame(X1=0.64, X3=367.5, X4= 220.5, X5= 3.5, X7= 0.40, X8= 5)
+predict(model, datapredict)
+predict(model2_reduced, datapredict_Case2)
+```
+
+From above we observe the predict by the base model was 17.80396, the predict by the case 2 model was 17.83895 and the orignal value from the dataset was 16.64.
+
+This basically proves that a new model without taking into consideration the contribution of X2 and X6 can give equivalently good results as the base model.
+
+```{r}
+summary(model2_reduced)
+```
+
+Therefore the new model from partial f-test analysis could be re-written as:
+
+*Y1 = 83.93287 -64.7739X1 -0.02648X3 -0.17458X4 +4.16994X5 +19.93268X7 +0.20377X8*
+
+$$ \pagebreak $$
+
+# **Chapter 6**
+
+# 6.1 Sequential Methods for Model Selection
+
+## 6.1 Stepwise Regression Analysis
+
+### 6.1.1 Fitting model through Forward Selection
+
+```{r}
+library(leaps)
+forward <- regsubsets(Y1~., data=data, nvmax = 8, method = 'forward')
+summary(forward)
+```
+
+"*" denotes inclusion of variable in the model
+
+Following are the models suggested by forward selection method:
+
+* Best one variable model includes just X5
+* Best two variable model includes X5 and X7
+* Best three variable model includes X3, X5 and X7
+* Best four variable model includes X1, X3, X5 and X7
+* Best five variable model includes X1, X2, X3, X5 and X7
+* Best six variable model includes X1, X2, X3, X5, X7 and X8
+* Best seven variable model includes X1, X2, X3, X5, X6, X7 and X8
+
+### 6.1.2 Fitting model through Backward Elimination
+
+```{r}
+backward <- regsubsets(Y1~., data=data, nvmax = 8, method = 'backward')
+summary(backward)
+```
+
+From above we observe that the same model suggestion are given in this case by both forward selection and backward elimination.
+ 
+Let us try to observe the values of the coffecient in case of forward selection and backward elimination in two cases. 
+
+* Case 1: When we fit the model with 7 variables 
+* Case 2: When we fit the model with 4 variables 
+
+### 6.1.3 Coffecients of variables in case when we fit model with 7 variables
+
+*    **Forward Selection**
+
+```{r}
+coef(forward, 7)
+```
+
+*    **Backward Elimination**
+
+```{r}
+coef(backward, 7)
+```
+
+We thus observe in both the cases same coffecients for the variables are observed.
+
+### 6.1.4 Coffecients of variables in case when we fit model with 4 variables
+
+*    **Forward Selection**
+
+```{r}
+coef(forward, 4)
+```
+
+*    **Backward Elimination**
+
+```{r}
+coef(backward, 4)
+```
+
+In this case we tried to fit best 4 variable model that we derived out of forward selection and backward elimination. We found that in both the cases same variables were choosen for the model. From above we can clearly observe the values of the coffecients for the best 4 variable fitted model.
+
+## 6.2 Procedural analysis for best subset selection 
+
+**Comparing R-squared, Regression Sum of Squares, Adjusted R-Squared, Cp and BIC**
+
+We will compare model on basis of score of various parameters above. We will select the best regression model by taking in consideration all the scores and select the best optimum model giving the best prediction with minimum number of variables.
+```{r}
+fit <- regsubsets(Y1~., data=data, nvmax=8)
+summary(fit)
+```
+
+The 7 best model for each case ranging from model with one variable to model with 7 variables is given by above summary. We will now compare R-squared, Regression Sum of Squares, Adjusted R-Squared, Cp and BIC for the 7 models and select the model with optimum values thus giving proper reasoning for it. The method to select the best model in each category is based on "exhaustive" method of selection.
+
+**Regression sum of squares for 7 models, the first one with single variable and the last one with 7 variables:**
+```{r}
+summary(fit)$rss
+```
+
+**R-squared for 7 models, the first one with single variable and the last one with 7 variables:**
+```{r}
+summary(fit)$rsq
+```
+
+**Adjusted R-squared for 7 models, the first one with single variable and the last one with 7 variables:**
+```{r}
+summary(fit)$adjr2
+```
+
+**Cp for 7 models, the first one with single variable and the last one with 7 variables:**
+```{r}
+summary(fit)$cp
+```
+
+**BIC for 7 models, the first one with single variable and the last one with 7 variables:**
+```{r}
+summary(fit)$bic
+```
+
+Since the optimum model will be based on the intersection of all the selection parameters (RSS, R-squared, Adjusted R-squared, Cp and BIC), it will be a great idea to plot all of them and try to figure out the best model out of it.
+
+```{r}
+par(mfrow=c(3,2))
+plot(summary(fit)$rss ,xlab="Number of Variables ",ylab="RSS", type="l")
+plot(summary(fit)$rsq ,xlab="Number of Variables ",ylab="Rsq", type="l")
+plot(summary(fit)$adjr2 ,xlab="Number of Variables ",ylab="adjr2", type="l")
+plot(summary(fit)$cp ,xlab="Number of Variables ",ylab="cp", type="l")
+plot(summary(fit)$bic ,xlab="Number of Variables ",ylab="bic", type="l")
+```
+
+We should aim at minimizing the BIC, RSS and Cp and try to maximize R-squared and Adjusted R-squared to find the best model. By seeing the graph mostly all of them start to flaten when number of variables are equal to 4 and is almost constant for variable range from 5 to 7.
+
+This means that we can go with 4 variable model to get good predictions and to be on safer side we can choode 5 variable model. By increasing number of variable above 5, no further improvement or negligible improvement will be observed.
+
+P.S. Whenever we take of 4 variable, 5 variable or in that case 'n' variable model, we are refering to best fit moedel that we found in the above investigation.
+
+## 6.3 Examining and fitting model with 4 and 5 variables 
+
+The best fit 4 variable model through above investigation included variables X1, X3, X5 and X7 and 5 variable model included variables X1, X2, X3, X5 and X7. 
+
+Different sleection parameters for 4 variable model are:
+
+RSS: 6654.418
+R-Squared: 0.9147851
+Adjusted R-Squared: 0.9143384
+Cp: 13.834344
+BIC: -1858.042
+
+Different sleection parameters for 5 variable model are:
+
+RSS: 6581.283
+R-Squared: 0.9157217
+Adjusted R-Squared: 0.9151686
+Cp: 7.351511
+BIC: -1850.988
+
+```{r}
+Fit_4Variable <- lm(Y1 ~ X1+ X3+ X5+ X7)
+coef(Fit_4Variable)
+Fit_5Variable <- lm(Y1 ~ X1+ X2+ X3+ X5+ X7)
+coef(Fit_5Variable)
+```
+
+From above following would be equation for four variable model:
+
+*Y1 = -11.95301879 -14.53244055X1 + 0.03497595X3 + 5.60675320X5 + 20.43789945X7*
+
+Equation for 5 variable model:
+
+*Y1 = 84.38757009 -64.77399149X1  -0.08729027X2 +0.06081334X3 +4.16993881X5 +20.43789945X7*
+
+As of now we have done exhaustive analysis algorithm to find the best 1 variable - 7 variable model. We used different pameters like R-squared, Adjusted R-Squared, RSS, BIC and Cp to compare these models. After these through graphical analysis of these models we came to conclusion that the model with 4 and 5 variables would solve our purpose.
+
+Above we have derived the equation for 4 variable and 5 variable multiple regression model. The values of selection parameters in both cases don't have much difference. We can be quite sure of getting good results with 4 variable equation but to be on safer side and to have a little more accuracy in results we can go with 5 variable model as well.
+
+## 6.4 PRESS Statistics for model selection/ Cross Validation
+
+Now at the end we will try and analyze which models perform the best using PRESS stastics. To do this, we will take the 12 models on which we applied the partial f-test and see how does the result differs in case when PRESS stastics is used to judge the model performance. The lower the PRESS stastics the better is the model performance. 
+
+### 6.4.1 Case: 1 (When X1, X8 = 0)
+
+```{r}
+library(MPV)
+model1_reduced <- lm(Y1 ~ X2+ X3+ X4 +X5+ X6+ X7)
+PRESS(model1_reduced)
+```
+
+### 6.4.2 Case: 2 (When X2, X6 = 0)
+
+```{r}
+model2_reduced <- lm(Y1 ~ X1+ X3+ X4 +X5+ X7+ X8)
+PRESS(model2_reduced)
+```
+
+
+### 6.4.3 Case: 3 (When X3, X5 = 0)
+
+```{r}
+model3_reduced <- lm(Y1 ~ X1+ X2+ X3+ X6+ X7+ X8)
+PRESS(model3_reduced)
+```
+
+
+### 6.4.4 Case: 4 (When X4, X7 = 0)
+
+```{r}
+model4_reduced <- lm(Y1 ~ X1+ X2+ X3 +X5+ X6 + X8)
+PRESS(model4_reduced)
+```
+
+
+### 6.4.5 Case: 5 (When X3, X5, X7 = 0)
+
+```{r}
+model5_reduced <- lm(Y1 ~ X1+ X2+ X4+ X6+ X8)
+PRESS(model5_reduced)
+```
+
+
+### 6.4.6 Case: 6 (When X6, X7, X8 = 0)
+
+```{r}
+model6_reduced <- lm(Y1 ~ X1+ X2+ X3 +X4+ X5)
+PRESS(model6_reduced)
+```
+
+
+### 6.4.7 Case: 7 (When X2, X7 = 0)
+
+```{r}
+model7_reduced <- lm(Y1 ~ X1+ X3 +X4+ X5+ X6+ X8)
+PRESS(model7_reduced)
+```
+
+
+### 6.4.8 Case: 8 (When X4, X8 = 0)
+
+```{r}
+model8_reduced <- lm(Y1 ~ X1+ X2+ X3+ X5+ X6+ X7)
+PRESS(model8_reduced)
+```
+
+
+### 6.4.9 Case: 9 (When X1, X2 = 0)
+
+```{r}
+model9_reduced <- lm(Y1 ~ X3 +X4+ X5+ X6+ X7+ X8)
+PRESS(model9_reduced)
+```
+
+
+### 6.4.10 Case: 10 (When X3, X4 = 0)
+
+```{r}
+model10_reduced <- lm(Y1 ~ X1+ X2+ X5+ X6+ X7+ X8)
+PRESS(model10_reduced)
+```
+
+
+### 6.4.11 Case: 11 (When X5, X6 = 0)
+
+```{r}
+model11_reduced <- lm(Y1 ~ X1+ X2+ X3+ X4+ X7+ X8)
+PRESS(model11_reduced)
+```
+
+
+### 6.4.12 Case: 12 (When X2, X5, X6, X7 = 0)
+
+```{r}
+model12_reduced <- lm(Y1 ~ X1+ X3+ X4+ X8)
+PRESS(model12_reduced)
+```
+
+### 6.4.13 Case: 13, Full Model
+
+Here we will use MODEL 1 i.e. the full model for calculating the PRESS stastics.
+
+
+```{r}
+PRESS(model)
+```
+
+### 6.4.14 Case: 14 (Best 4 variable model through procedural analysis, i.e. X2, X3, X6, X8 = 0)
+
+```{r}
+model14_reduced <- lm(Y1 ~ X1+ X4+ X5+ X7)
+PRESS(model14_reduced)
+```
+### 6.4.15 Case: 15 (Best 5 variable model through procedural analysis, i.e. X2, X3, X6 = 0)
+
+```{r}
+model15_reduced <- lm(Y1 ~ X1+ X4+ X5+ X7+ X8)
+PRESS(model15_reduced)
+```
+### 6.4.16 (Best 6 variable model through procedural analysis, i.e. X4, X6 = 0)
+
+```{r}
+model16_reduced <- lm(Y1 ~ X1+ X2+ X3+ X5+ X7+ X8)
+PRESS(model16_reduced)
+```
+### 6.4.17 (Best 7 variable model through procedural analysis, i.e. X4= 0)
+
+```{r}
+model17_reduced <- lm(Y1 ~ X1+ X2+ X3+ X5+ X6+ X7+ X8)
+PRESS(model17_reduced)
+```
+
+From values of PRESS stastics for different cases we see that the lowest PRESS stastics is of range 6600 and the higest PRESS stastics extends upto range of 13000. Models with press stastics of range 6600 - 7000 are pretty effective model. 
+
+One more intresting thing to note here is that all the models selected through procedural analysis have pretty good PRESS stastics giving validation for the procedural analysis done earlier.
+
+Keeping in mind the optimum range of PRESS stastics being between 6600 - 6800, according to results above it would still be a great idea to go with 4 variable model or 5 variable model that we got out of procedural analysis as they are good mix of accuracy with minimum necessary variables requried to get a good prediction out of the model.
+
+$$ \pagebreak $$
+
+# **Chapter 7** 
+
+## 7.1 Conclusion
+
+We have performed a rigrious multivariate regression analysis on the selected dataset. In a brief summary following are the things we have covered:
+
+* We understood the data set and its attributes and defined the objectives for this project report.
+* We fitted the linear model with all the regressor variables and found out its cofficients thus fully defining the model.
+* To get the gist of polynomial regression we tried to fit the model with same variables but this time including varibles of degress 2, thus getting a quadratic fit for the model.
+* We tried to so lack of fit analysis to better understand the model.
+* Model dignostics wascarried out using leverage analysis and residual analysis.
+* Next we moved on to find confidence interval over the variables, confidence interval over the model and prediction interval.
+* Variance-covariance matrix was calculated and unbaised estimator of variance was derived.
+* Model subset was made using p-values for variable screening.
+* Partial f-test was used to analyze various cases in the model.
+* Stepwise regression analysis was performed for subset selection (forward selection and backward elimination)
+* Procedural analysis was done by using various selection parameters like Cp, AIC, BIC, R-squared, Adjusted R-Squared to select the best model.
+* PRESS stastics was used for model validation and to select the best model according to it.
+* In conclusion I would like to suggest two best models, keeping in mind the best mixture for minimum variables:
+
+The first one is the 4 variable model:
+
+**Y1 = -11.95301879 -14.53244055X1 + 0.03497595X3 + 5.60675320X5 + 20.43789945X7**
+
+The second is 5 variable model:
+
+**Y1 = 84.38757009 -64.77399149X1  -0.08729027X2 +0.06081334X3 +4.16993881X5 +20.43789945X7**
+
+* Thus we can conclude that the heating load is primarly dependent on Relative Compactness, Wall Area, Surface Area, Overall Height and Glazing Area. Roof Area, Orientation and Glazing Area Distribution also play a role in heating load but their contribution is relatively less.
+
+
