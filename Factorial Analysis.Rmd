@@ -1,0 +1,552 @@
+---
+output: html_document
+---
+\centering
+\vspace*{5cm}
+
+\LARGE
+A Project Report on Design of Experiment and Factor Analysis
+\Large
+Gurtej Khanooja
+
+\Large
+April 2017
+
+\normalsize
+
+\pagenumbering{roman}
+\raggedright
+\clearpage
+
+\tableofcontents
+
+\pagebreak
+\pagenumbering{arabic}
+\setcounter{page}{4}
+
+
+
+# Chapter 1
+# Introduction
+## 1.1 Objective
+
+* To carry out sequential factorial analysis methods on energy effiency dataset.
+* To carry out one factorial analysis, multiple factorial analysis and $2^k$ factorial analysis on the dataset implementing all the techniques learned in class.
+* Provide proper conclusion for each factorial analysis technique used on the dataset.
+
+## 1.2 Understanding the Dataset
+
+```{r}
+data<-read.csv("/Users/Gurtej/Documents/NEU/Course Material/Semester 2/SME/SME - Project 1/ENB2012_data.csv")
+head(data)
+```
+
+The dataset is borrowed from UC Irvine Machine Learning Repository. It's an energy effiency dataset with 768 observations.There are total of 8 attributes and 1 respose variable in the dataset. The different attributes collectively are responsible for the energy consumption (the response variable). Each factor contributes towards the energy consumption in its own way. 
+
+Following are the attributes and the dependent variable in the data set:
+
+List of independent variables:
+
+* X1	Relative Compactness 
+* X2	Surface Area 
+* X3	Wall Area 
+* X4	Roof Area 
+* X5	Overall Height 
+* X6	Orientation 
+* X7	Glazing Area 
+* X8	Glazing Area Distribution 
+
+Dependent Variable:
+
+* y1 Heating Load 
+
+Our goal is to perform factor analysis on the energy effiency data and get hands on experience of concepts learned in the class. Using stastical results we would like to understand, which are the most influential factors that affect the heating load. We will start with one factor analysis by randomly selecting a factor from our dataset and seeing it influence on the dependent variable by applying factor analysis. This would be further extended to two and three factor anlaysis. Moving on we will see what is $ 2^k $ factor analysis and see how to design the experiment for it and try to see $ 2^k $ factor analysis in action by considering multiple factors.
+
+## 1.3 Loading the dataset
+
+```{r}
+data <- read.csv("/Users/Gurtej/Documents/NEU/Course Material/Semester 2/SME/SME - Project 1/ENB2012_data.csv", header=TRUE)
+head (data)
+attach (data)
+```
+
+$$ \pagebreak $$
+
+# Chapter 2 
+# One-Factor Designs and Analysis of Variance
+
+## 2.1 Preparing data for one factor analysis
+
+For one-factor design we are intrested in seeing how the heating load is affected by varying one factor in the dataset. 
+
+For the purpose of project here, the attribute that we will consider for the one-factor experiment is orientation of building affecting the heating load. The treatment i.e. the orentation is divided in four levels (2,3,4 and 5). Each level signifies a different orentation. 
+
+```{r}
+one_factor <- data[,c(6,9)]
+one_factor$X6 <- factor(one_factor$X6)
+head(one_factor[order(one_factor$X6),], n=50)
+```
+
+In the above data we have extracted two rows from the initial data, the two rows being X6 (orentation of the building) and Y1 (heating load). 
+
+Second, we have sorted the data according to ascending order of X6 to begain with our analysis.
+
+## 2.2 Graphical interpretation of data
+
+### 2.2.1 Box Plot
+
+```{r}
+require(ggplot2)
+ggplot(one_factor, aes(x = X6, y = Y1)) +
+geom_boxplot(fill = "grey80", colour = "blue") +
+scale_x_discrete() + xlab("Orientation") +
+ylab("Heating Load")
+```
+
+The above box plot shows variation of heating load with the orientation for various level of orientation factor. We can see from the plot that the values of heating load are uniformly distributed for all different kinds of orentation level suggesting a strong possiblity of same mean observation amoung them.
+
+### 2.2.2 Jitter Plot
+
+```{r}
+stripchart(Y1~as.factor(X6),vertical=T,pch=19,data = data, xlab= "Orientation", ylab = "Heating Load",method ="jitter")
+
+```
+
+The jitter plot also suggest simalar infrences like box plot above. The data seems to be uniformly distributed amoungst various level of orientation suggesting a strong possiblity of equal means amoungst the various levels graphically.
+
+## 2.3 Model Analysis
+
+### 2.3.1 One way ANOVA model 
+
+$$ Ho : \mu 1 = \mu 2 = \mu 3 = \mu 4 $$
+$$ H1 : \mu 1 \neq \mu 2 \neq \mu 3 \neq \mu 4 $$ 
+
+```{r}
+analysis <- lm(Y1 ~ X6, data = one_factor)
+anova(analysis)
+```
+
+From the above analysis the sum of square corrosponding to X6 is the treatment sum of squares (SSA) and the sum of square corrosponding to Residual is the sum o of squares of error (SSE). 
+
+There are two estimates of population variance that we get from above result, one judged from variablity between the orientation of building (i.e. 0.556) and other judged from variablity within the orientation of building (i.e. 102.210).
+
+From above the F-value is 0.0054 and corrosponding P-value is 0.9994 suggesting that we fail to reject the null hypothesis.
+
+### 2.3.2 Checking Normality Condition
+
+For doing ANOVA for 1 factor design it is important that the normality condition is satisfied. We will try visualizing it using the Q-Q plot. The Q-Q plot for this analysis is below:
+
+```{r}
+plot(analysis, which=2)
+```
+
+We see that the plotted residuals does not consides the straigth line suggesting violation of the normality condition. The ANOVA is robust provided that the normality conditions are followed. Here we are performing the analyis for one factor analysis but since the normality conditions are not followed we cannot be sure about the results.
+
+### 2.3.3 Multiple Comparsion Test
+
+Multiple comparsion test is usually performed when we reject Ho and we want to observe what the relation between other means and see that if they are some way connected to each other. The sole purpose of doing this is because the ANOVA does'nt tell us, in case we reject we still don't know which population means are equal and which are not.
+
+**(a) Tukey's Test**
+
+```{r}
+TukeyHSD(aov(analysis))
+```
+
+Though it is not of use to perform the Tukey's test in this particular case. But from the above result we can see that all the p-values are very high of range 0.999 suggesting that there is no significant difference between between means of different orentation.
+
+**(b) Duncan's multiple-range test**
+
+```{r}
+library(agricolae)
+duncan.test(aov(analysis), "one_factor$X6", 0.05, console = TRUE)
+```
+
+There is no group formation in the Duncan Test suggesting that the mean of all the levels within the treatment is stastically same according to Ducan Test.
+
+**(c) Dunnett's Test**
+
+```{r}
+library(multcomp)
+Dunnett <- glht(aov(analysis), linfct = mcp(X6 ="Dunnett"))
+summary(Dunnett)
+```
+
+The P-value is equal to 1 for all observations in the table. This suggest that there is no significant difference between the levels within the treatment X6.
+
+**(d) Bonferroni's test**
+
+```{r}
+pairwise.t.test(one_factor$Y1, one_factor$X6, p.adjust.method = "bonferroni")
+```
+
+The high p-value between all paiirs indicates that the the levels within treatment are not significantly different.
+
+$$ \pagebreak $$
+
+# Chapter 3
+# Multiple-Factor Designs and Analysis of Variance
+
+## 3.1 Two Factor design and Two way ANOVA
+### 3.1.1 Preparing data for two factor analysis 
+
+For two factor analysis we create a experiment such that we would like to see the effects that 2 factors play on the dependent variable. For the project purpose we continue taking X6 (orientation) as one factor having 3 levels and X4 (Roof Area) with 4 levels. 
+
+Levels for X6 are 2, 3, 4 and 5.
+
+Levels for X4 are 110.25, 122.5, 147, 220.50.
+
+```{r}
+two_factor <- data[,c(4,6,9)]
+two_factor$X6 <- factor(two_factor$X6)
+two_factor$X4 <- factor(two_factor$X4)
+head(two_factor[order(two_factor$X6),], n=50)
+```
+
+So now we have data ready for two factor analysis of variables. We can use this data frame now to carry out the factorial analysis.
+
+### 3.1.2 Graphical Analysis
+
+**Comparision Plots**
+```{r}
+plot(two_factor)
+```
+
+The above graph will get us started with a little bit exploratory analysis for two factor analysis. Dependency of heat load on X6 (orentation of building) looks preety uniform, but we can clearly see that for lower roof area the heating load is comparatively higer as compared to higher roof area.
+
+**Interaction Plots**
+
+```{r}
+interaction.plot(two_factor$X6, two_factor$X4, two_factor$Y1)
+```
+
+Factor X4 is at four different level. The interaction plot shows that there is no interaction effect between the different levels of X4 on th dependent variable as the levels of other independent variable changes. There are four factor levels for both X4 and X6.
+
+**Box Plots**
+
+```{r}
+boxplot(Y1~X4, data=two_factor, main = "Heat Load v/s Roof Area", xlab = "Roof Area", ylab= "Heat Load")
+```
+
+We had already seen earlier during one factor design of experiment a box plot between heat load and orentation of building. Here we now analyze through boxplot variation of heat load with roof area. 
+
+We can clearly see that there is variation of heat load with the roof area. At different factor level of roof area there is different mean heat load and it drastically decreases for factor level of 220.5
+
+### 3.1.3 Model Analysis
+
+**Two way ANOVA Model**
+ 
+ The general model for two way anova is as follows:
+ 
+ \[ y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ijk} \]
+ 
+ We will test 3 different hypothesis using the two-way anova:
+ 
+ (i) (a) $H_0^{'}: \alpha_1 = \alpha_2 = \alpha_3 = \alpha_4$ 
+     (b) $H_0^{''}: \beta_1 = \beta_2 = \beta_3 = \beta_4$
+     (c) $H_0^{'''}: {(\alpha\beta)}_{11} = {(\alpha\beta)}_{12} = {(\alpha\beta)}_{13} = .... {(\alpha\beta)}_{44}$
+     
+(ii) (a) At least one of $\alpha_i$ is not equal to zero.
+     (b) At least one of $\beta_j$ is not equal to zero.
+     (c) At least one of ${(\alpha\beta)}_{ij}$ is not equal to zero.
+     
+
+--> The first hypothesis is to study whether there is significant difference in the mean heat load due different orientation of the building.
+
+--> The second hypothesis is to study whether there is significant difference in the mean heat load due roof area of the building.
+
+--> The third hypothesis is to study whether there is significant difference in the mean heat load due to interaction of roof area and orientation of the building.
+
+```{r}
+analysis1 <- lm(Y1 ~ X6*X4, data = two_factor)
+anova(analysis1)
+```
+
+--> From the above result for analysis of variance we see that p-value corrosponding to X6 is 0.9959 suggesting that we fail to to reject Ho.
+
+--> For X4 the p-value is very small suggesting that we reject Ho and conclude that the means for different level of roof area are not equal and they have varying effect in the heat load.
+
+--> From the above result for analysis of variance we see that p-value corrosponding to interaction of X4 and X6 is 0.9981 suggesting that we fail to to reject Ho.
+
+Apart from above conclusions we can derive following observations from the output above:
+
+* SSA = 2
+* SSB = 58001
+* SS(AB) = 0
+* SSE = 20086
+
+**As such there is no use of doing a multiple comparison test here as there is just one significant factor here i.e. X4. Doing multiple comparision test will not give us any significant inferences.**
+
+**Checking Normality for two way ANOVA**
+
+```{r}
+plot(analysis1, which=2)
+```
+
+From above line we can see that majority of the observation follows the the dashed line sequence providing a proof for normality and suggesting that performing ANOVA would be a good decesion to use as an analysis tool.
+
+Now we will extend our process to 3 factor design and analysis of experiment and see how the interaction amougst the variable at different treatment level varies in that case.
+
+## 3.2 Three Factor design and Three way ANOVA
+
+Now to further extend our analysis for three factor analysis we will take into consideration X7 (glazing area of building) in addition to X4 (roof area) and X6 (orientation)
+
+### 3.2.1 Preparing data for three factor analysis 
+
+Levels for X6 are 2, 3, 4 and 5.
+
+Levels for X4 are 110.25, 122.5, 147, 220.50.
+
+Levels for X7 are 0.00, 0.10, 0.25, 0.40
+
+```{r}
+three_factor <- data[,c(4,6,7,9)]
+three_factor$X6 <- factor(three_factor$X6)
+three_factor$X4 <- factor(three_factor$X4)
+three_factor$X7 <- factor(three_factor$X7)
+head(three_factor[order(three_factor$X6),], n=50)
+```
+
+So now we have data ready for three factor analysis of variables. We can use this data frame now to carry out the factorial analysis.
+
+### 3.2.2 Graphical Analysis
+
+**Comparision Plots**
+```{r}
+plot(three_factor)
+```
+
+The above graph will get us started with a little bit exploratory analysis for three factor analysis. There is noting special that can be observed here apart from already observed relation between parameters in case of two factor analysis. Though a new trend to observe would be mean increase in the heating load with increase in glazing area. 
+
+**Interaction Plots**
+
+```{r}
+par(mfrow=c(3,1))
+interaction.plot(three_factor$X6, three_factor$X4, three_factor$Y1)
+interaction.plot(three_factor$X6, three_factor$X7, three_factor$Y1)
+interaction.plot(three_factor$X7, three_factor$X4, three_factor$Y1)
+```
+
+The three interaction plots above shows that there is no interaction effect between the different levels of any treatment on the dependent variable as the treatment levels of other independent variable changes. The lines in all the graphs run parallely and does not show any sign of interaction. Graphically this means that factors emerging due to interaction of different main factors doesnot play a significant or no role at all on the heating load.
+
+**Box Plots**
+
+```{r}
+boxplot(Y1~X7, data=two_factor, main = "Heat Load v/s Glazing Area", xlab = "Glazing Area", ylab= "Heat Load")
+```
+
+We had already seen earlier during one factor design of experiment a box plot between heat load with orentation and roof area of building. Here we now analyze through boxplot variation of heat load with glazing area. 
+
+We can clearly see that there is  slight variation of heat load with the glazing area. At different factor level of glazing area there is different mean heat load and it slightly changes for every treatment, lowest being at 0 glazing area and maximum being at 0.4 glazing area.
+
+### 3.1.3 Model Analysis
+ 
+**Three way ANOVA Model**
+The general model for three way anova is as follows:
+ 
+ \[ y_{ijkl} = \mu + \alpha_i + \beta_j + \gamma_k + (\alpha\beta)_{ij} + (\alpha\gamma)_{ik} + (\beta\gamma)_{jk} + (\alpha\beta\gamma)_{ijk} + \epsilon_{ijkl} \]
+ 
+ We will test 7 different hypothesis using the two-way anova:
+ 
+ (i) (a) $H_0^{'}: \alpha_1 = \alpha_2 = \alpha_3 = \alpha_4$ 
+     (b) $H_0^{''}: \beta_1 = \beta_2 = \beta_3 = \beta_4$
+     (c) $H_0^{'''}: \gamma_1 = \gamma_2 = \gamma_3 = \gamma_4$
+     (d) $H_0^{''''}: {(\alpha\beta)}_{11} = {(\alpha\beta)}_{12} = {(\alpha\beta)}_{13} = .... {(\alpha\beta)}_{44}$
+     (e) $H_0^{'''''}: {(\alpha\gamma)}_{11} = {(\alpha\gamma)}_{12} = {(\alpha\gamma)}_{13} = .... {(\alpha\gamma)}_{44}$
+     (f) $H_0^{''''''}: {(\beta\gamma)}_{11} = {(\beta\gamma)}_{12} = {(\beta\gamma)}_{13} = .... {(\beta\gamma)}_{44}$
+     (g) $H_0^{'''''''}: {(\alpha\beta\gamma)}_{111} = {(\alpha\beta\gamma)}_{112} = {(\alpha\beta\gamma)}_{113} = .... {(\alpha\beta\gamma)}_{444}$
+     
+     
+(ii) (a) $H_0^{'}:$ At least one of $\alpha_i$ is not equal to zero.
+     (b) $H_0^{''}:$ At least one of $\beta_j$ is not equal to zero.
+     (c) $H_0^{'''}:$ At least one of $\gamma_k$ is not equal to zero.
+     (d) $H_0^{''''}:$ At least one of ${(\alpha\beta)}_{ij}$ is not equal to zero.
+     (e) $H_0^{'''''}:$ At least one of ${(\alpha\gamma)}_{jk}$ is not equal to zero.
+     (f) $H_0^{''''''}:$ At least one of ${(\beta\gamma)}_{ik}$ is not equal to zero.
+     (g) $H_0^{'''''''}:$ At least one of ${(\alpha\beta\gamma)}_{ijk}$ is not equal to zero.
+
+Now we move on to prepare the ANOVA model to study the above hypothesis.
+
+```{r}
+analysis2 <- lm(Y1 ~ X6*X4*X7, data = three_factor)
+anova(analysis2)
+```
+
+--> From the above output of ANOVA analysis we see that there are only 3 factors that are significantly affecting the heating load with change in treatment level. These factors are X4, X7 and interaction between X4 and X7. Other factors have very high p-value suggesting their negligible importance in heat load variance.
+
+**Checking Normality Condition**
+
+```{r}
+plot(analysis2, which=2)
+```
+
+From the above Q-Q plot we can say that in case of 3 factor design the normality is being followed for initial observations and later observations are being deviated from following the normality trend.
+
+**Multiple Comparision Test**
+
+**(a) Tukey's Test**
+
+Since we rejected Ho here, now we will move on to perform mutiple comparision test to see that what factors tend to have a common mean condition and try to observe interaction of mean between various factors taken into consideration.
+
+```{r}
+TT3 <- TukeyHSD(aov(analysis2))
+head(TT3[[1]])
+head(TT3[[4]])
+```
+
+Considering 3 factors with 4 levels each there would be 12288 observations that whould be generated by applying this test. It is not useful neither feasible to study these many observations. A sample of output produced by test is depicted in the above data frame.
+
+Other multiple comparsion test are generally useful while studying one factor analysis, therefore we won't be using those test here with 3 factor analyis.
+
+$$ \pagebreak $$
+
+# Chapter 4
+# $2^k$ Factorial Experiments and Analysis
+
+## 4.1 Introduction
+
+This is a $2^k$ (k=4 in this case) design which involves creation of a factorial design with exactly 2 levels.The reason behind using this approach is to keep experimental ???costs??? in control, which means that we need to take measurements (in an experiment) for a carefully choosen limited number of factor levels.This technique ensures that the main effects and low-order interaction effects can be estimated and tested, at the expense of high-order interactions.The scientific rationale behind this approach is that it is unlikely that there are significant complex interactions among various factors so we can assume that there are probably only main effects and a few low-order interactions. Now the first step in this analysis was to acquire data that fullfills this requirement. Since the data set available has multiple levels for each factor therefore we transform the data by finding the mean of the numerical values for each factor and then defining 2 levels (high and low) based on whether the value is above the average or below the average computed.
+
+## 4.2 Prepration of Data 
+
+Let's do a initial ANOVA test and see what are the variables that we can choose to perform the $2^k$ factor analysis.
+
+```{r}
+analysis3 <- lm(Y1 ~ X1*X2*X3*X4*X5*X6*X7*X8)
+anova(analysis3)
+```
+
+From above we see as far as single main factors are considered X1, X2, X3, X5 and X8 play a significant role on the varinace of dependent variable i.e. (Y1: Heating Load)
+
+We randomly select 4 factors from above 5 and will try to segregate them in two levels as described by the above procedure.
+
+The factors that we choose for the analysis are as follows:
+
+* X1	Relative Compactness (Initial number of levels: 12)
+* X2	Surface Area (Initial number of levels: 12)
+* X3	Wall Area (Initial number of levels: 7)
+* X5	Overall Height (Initial number of levels: 2)
+
+**Extracting the needed coloumn out of the initial data frame**
+
+```{r}
+two_k <- data[,c(1,2,3,5,9)]
+head(two_k)
+```
+
+The above data fram cntains four attributes that are of our interest and further analysis will be done on it. Now we will convert these two make all the treatment two level by process as described above.
+
+### 4.2.1 Converting the dataset in two level form
+
+```{r}
+colSums(two_k)/768
+```
+
+The mean value of each coloum in as described above. In every case if the observation is bigger than the mean value it would be assigned value "1" and if the value is smaller than or equal to the mean value it will be assigned value "-1".
+
+```{r}
+two_k$X1[two_k$X1 <= 0.7641667] <- -1
+two_k$X1[two_k$X1 > 0.7641667] <- 1
+two_k$X2[two_k$X2 <= 671.7083333] <- -1
+two_k$X2[two_k$X2 > 671.7083333] <- 1
+two_k$X3[two_k$X3 <= 318.5000000] <- -1
+two_k$X3[two_k$X3 > 318.5000000] <- 1
+two_k$X5[two_k$X5 == 3.5] <- -1 #Since here we just have two levels initially 
+two_k$X5[two_k$X5 == 7.0] <- 1  #Since here we just have two levels initially 
+head(two_k)
+```
+
+Now as seen above we have made our data ready to the $2^k$ factor analysis.
+
+## 4.3 Graphical Analysis
+
+**Graphical Look at Factors taken into Consideration**
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(Y1~X1, data=two_k, main="Heating Load by Relative Compactness",
+        xlab="Relative Compactness (X1)",ylab="Heating Load (Y1)")
+
+boxplot(Y1~X2, data=two_k, main="Heating Load by Surface Area",
+        xlab="Surface Area (X2)",ylab="Heating Load (Y1)")
+
+boxplot(Y1~X3, data=two_k, main="Heating Load by Wall Area",
+        xlab="Wall Area (X3)",ylab="Heating Load (Y1)")
+
+boxplot(Y1~X2, data=two_k, main="Heating Load by Overall Height",
+        xlab="Overall Height (X4)",ylab="Heating Load (Y1)")
+```
+
+There are some outliers in all the factor plots, the number of outliers in case of "Relative Compactness" factor are way more. In all cases there is significant difference in the mean at both levels.
+
+## 4.4 Design of Experiment and Analysis for $2^k$ Factor Analysis
+
+Since we have 4 factors all at two levels, we will try to see the number and type of test that we have to perform.
+
+```{r}
+library(AlgDesign)
+FFA <- gen.factorial(levels = 2, nVars = 4, center = TRUE, varNames = c("X1", "X2", "X3", "X5"))
+FFA
+```
+
+So as we see above we have the test matrix above. Total of 16 runs are requried for the full factorial analysis.
+
+### 4.4.1 ANOVA Analysis
+
+```{r}
+two.k <- lm(Y1~X1*X2*X3*X5, data=two_k)
+anova(two.k)
+```
+
+
+Out of the factors in the above anova model only X1, X2, X3 and interaction between X1 and X3 tend to be significant. It can be observed from their low p-values. It means relative compactness, surface area and wall area along with interaction of relative compactness and wall area tend to affect the heating load the most. The influence on heating load due to the fourth factor taken into consideration i.e. the overall height of the building is either very less or is alredy been taken into consideration due to factors X1, X2, X3 and interaction between X1 and X3.
+
+Now, we will try to look at the regression equation to estimate the heating load, which will mostly be built out of the factors as found out through analysis of variance.
+
+### 4.4.2 Regression Model
+
+```{r}
+summary(two.k)
+```
+
+The regression model from above is:
+
+*Y1 = 23.6715 - 0.3021X1 - 10.1075X2 + 3.3571X3 + 1.7740X1X3*
+
+It is based on the factors that we got out of performing anova test earlier on the model. The regression equation is way of represting the heating load in terms of the important factors that we got out of the factor analysis or anova test.
+
+```{r}
+plot(two.k, which = 2)
+```
+
+From the Q-Q plot above we can be sure about our results because the normality condition seem to be satisfied pretty well by it.
+
+We can remove some variables and see different models but since we just have four factors under consideratin, doing that would not yield anything useful.
+
+The last thing that we would like to calculate is the confidence interval for the coffecients in regression model.
+
+```{r}
+confint(two.k)
+```
+
+The above table shows us the confidence interval for various coffecients considered in the regression model.
+
+$$ \pagebreak $$
+
+# Chapter 5
+
+# Conclusion
+
+Now in this section I would like to give a brief summary of the things that we covered as part of this project:
+
+* We understood the dataset and defined objectives for the project.
+* We choose one factor out of 8 given factors to start with the one factor analysis.
+* Graphical analysis and ANOVA testing was carried out to do the analysis for one factor design.
+* Following the map struture of one factor analysis, analysis was done in simalar fashion for two and three factor experiments.
+* Lastly we ended up doing $ 2^k $ factorial analysis strting with converting the dataset to appropriate form, doing graphical analysis followed by model analysis (ANOVA testing and regression analysis).
+
+**NOTE: We did not included the concept of blocking in our project because we are not sure how the data was collected. Blocking is ususally done to reduce or subdue the effect of higly varying observations in data if it occoured due to differentiating factors that can influence the data collected (for example: if the data was collected during different times of day). We could have displayed the idea of blocking by just radomly distributing data in blocks without specifying the creteria or basis on which we are forming them, but the sole concept of blocking would have been lost. That's why we did'nt included it.**
+
+
+
+
+
